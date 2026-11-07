@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Kde je vybavení? | CAS 20 TATRA</title>
+  <style>
+    :root {
+      --bg: #0b1220; --card: #152238; --accent: #3b82f6; --accent-hover: #2563eb;
+      --success: #22c55e; --error: #ef4444; --text: #f1f5f9; --muted: #94a3b8;
+      --border: #2a3a55; --warning: #f59e0b; --btn: #0f1b2e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #1a2b4a 0%, var(--bg) 55%);
+      color: var(--text); min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; padding: 16px;
+      -webkit-tap-highlight-color: transparent; overflow-x: hidden;
+    }
+    body.shake { animation: shake 0.45s ease; }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
+      60%{transform:translateX(-6px)} 80%{transform:translateX(6px)}
+    }
+    .container { width: 100%; max-width: 820px; position: relative; z-index: 1; }
+    header { text-align: center; margin-bottom: 14px; }
+    header h1 { font-size: 1.45rem; font-weight: 800; }
+    header p { color: var(--muted); font-size: 0.88rem; margin-top: 3px; }
+    .player-bar {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .player-chip {
+      background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.4);
+      color: #93c5fd; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+    }
+    .link-btn {
+      background: none; border: none; color: var(--muted); font-size: 0.8rem;
+      cursor: pointer; text-decoration: underline;
+    }
+    .link-btn:hover { color: var(--text); }
+
+    .stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .stat {
+      background: rgba(21,34,56,0.9); border: 1px solid var(--border); border-radius: 14px;
+      padding: 10px 16px; text-align: center; min-width: 88px;
+    }
+    .stat .label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat .value { font-size: 1.35rem; font-weight: 800; }
+    .stat.score .value { color: #60a5fa; }
+    .stat.streak .value { color: var(--warning); }
+    .stat.progress .value { color: var(--success); }
+
+    .card {
+      background: rgba(21,34,56,0.92); border: 1px solid var(--border); border-radius: 18px;
+      padding: 22px; margin-bottom: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+    }
+    .step-badge {
+      display: inline-block; background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: #fff; font-size: 0.72rem; font-weight: 800; padding: 5px 12px; border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .step-badge.detail { background: linear-gradient(135deg, #8b5cf6, #a855f7); }
+    .item-display { text-align: center; margin-bottom: 18px; }
+    .item-display .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .item-display .name { font-size: 1.35rem; font-weight: 800; line-height: 1.3; color: #fff; }
+    .item-display .qty { margin-top: 5px; font-size: 0.85rem; color: var(--muted); }
+
+    .sections-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
+    .section-btn {
+      background: var(--btn); border: 1px solid var(--border); color: var(--text);
+      padding: 13px 14px; border-radius: 12px; font-size: 0.9rem; cursor: pointer;
+      transition: transform 0.12s, background 0.12s, border-color 0.12s;
+      text-align: left; line-height: 1.3; outline: none;
+    }
+    .section-btn:hover:not(:disabled):not(.correct):not(.wrong) {
+      background: #1a2d4a; border-color: #4b6288; transform: translateY(-2px);
+    }
+    .section-btn:disabled { cursor: default; }
+    .section-btn.correct {
+      background: linear-gradient(135deg, #16a34a, #22c55e) !important;
+      border-color: #22c55e !important; color: #fff !important;
+    }
+    .section-btn.wrong {
+      background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+      border-color: #ef4444 !important; color: #fff !important;
+    }
+
+    .feedback { text-align: center; min-height: 30px; margin-top: 14px; font-size: 1.05rem; font-weight: 700; }
+    .feedback.correct { color: var(--success); }
+    .feedback.wrong { color: var(--error); }
+    .feedback .sub { display: block; font-size: 0.82rem; font-weight: 500; color: var(--muted); margin-top: 3px; }
+    .streak-banner {
+      text-align: center; font-size: 0.9rem; font-weight: 700; color: var(--warning);
+      min-height: 20px; margin-top: 4px; opacity: 0; transition: opacity 0.25s;
+    }
+    .streak-banner.show { opacity: 1; }
+
+    .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+    .btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none;
+      padding: 12px 24px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn.danger { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .btn.success { background: linear-gradient(135deg, #16a34a, #15803d); }
+
+    .mode-select { display: flex; gap: 8px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .mode-btn {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      padding: 9px 14px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    }
+    .mode-btn.active { background: linear-gradient(135deg, #3b82f6, #6366f1); border-color: transparent; color: #fff; }
+
+    .menu-screen, .stats-screen, .end-screen { text-align: center; padding: 28px 16px; }
+    .menu-screen h2, .stats-screen h2, .end-screen h2 { font-size: 1.5rem; margin-bottom: 10px; font-weight: 800; }
+    .menu-screen p, .stats-screen p, .end-screen p { color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
+    .hidden { display: none !important; }
+
+    .main-correct-info {
+      background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.4);
+      border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; text-align: center;
+      font-size: 0.85rem; color: var(--success); font-weight: 600;
+    }
+    .progress-bar-wrap {
+      height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #22c55e);
+      transition: width 0.35s ease; border-radius: 4px;
+    }
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+
+    /* Fullscreen feedback overlay */
+    #fx-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      background: rgba(0,0,0,0.35);
+    }
+    #fx-overlay.show { opacity: 1; }
+    #fx-overlay .fx-symbol {
+      font-size: min(40vw, 180px);
+      line-height: 1;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.45));
+      transform: scale(0.6);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #fx-overlay.show .fx-symbol { transform: scale(1); }
+    #fx-overlay.ok { background: rgba(34, 197, 94, 0.28); }
+    #fx-overlay.bad { background: rgba(239, 68, 68, 0.28); }
+    #save-toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: rgba(15,23,42,0.92); border: 1px solid var(--border);
+      color: var(--muted); padding: 8px 14px; border-radius: 10px;
+      font-size: 0.8rem; z-index: 200; opacity: 0; transition: opacity 0.25s;
+      pointer-events: none;
+    }
+    #save-toast.show { opacity: 1; }
+
+
+    /* Login */
+    .login-form { max-width: 320px; margin: 0 auto; text-align: left; }
+    .login-form label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    .login-form input {
+      width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--btn); color: var(--text); font-size: 1rem; margin-bottom: 14px;
+    }
+    .login-form input:focus { outline: none; border-color: var(--accent); }
+    .player-list { margin-top: 16px; text-align: left; }
+    .player-list h3 { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+    .player-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      margin-bottom: 6px; cursor: pointer; background: var(--btn);
+    }
+    .player-item:hover { border-color: var(--accent); }
+    .player-item .name { font-weight: 600; }
+    .player-item .meta { font-size: 0.75rem; color: var(--muted); }
+
+    /* Stats lists */
+    .stat-summary {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px; margin-bottom: 18px;
+    }
+    .stat-box {
+      background: var(--btn); border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px; text-align: center;
+    }
+    .stat-box .num { font-size: 1.4rem; font-weight: 800; }
+    .stat-box .lbl { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    .item-list { text-align: left; max-height: 280px; overflow-y: auto; margin-bottom: 14px; }
+    .item-row {
+      display: flex; justify-content: space-between; gap: 8px; align-items: flex-start;
+      padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem;
+    }
+    .item-row .iname { flex: 1; }
+    .item-row .badge {
+      font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; white-space: nowrap;
+    }
+    .badge.ok { background: rgba(34,197,94,0.2); color: #86efac; }
+    .badge.bad { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .badge.mixed { background: rgba(245,158,11,0.2); color: #fcd34d; }
+
+    .tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .tab {
+      background: var(--btn); border: 1px solid var(--border); color: var(--muted);
+      padding: 7px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+    }
+    .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .menu-actions { display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 0 auto; }
+    .menu-actions .btn { width: 100%; }
+
+    @media (max-width: 600px) {
+      .item-display .name { font-size: 1.15rem; }
+      .sections-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+  <div id="fx-overlay"><span class="fx-symbol" id="fx-symbol"></span></div>
+  <div id="save-toast">Statistiky uloženy</div>
+  <div class="container">
+    <header>
+      <h1>🚒 Kde je vybavení?</h1>
+      <p>CAS 20 TATRA S2T</p>
+    </header>
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="card menu-screen">
+      <h2>Přihlášení hráče</h2>
+      <p>Zadej jméno – statistiky se ukládají v tomto zařízení.</p>
+      <div class="login-form">
+        <label for="player-name">Jméno hráče</label>
+        <input id="player-name" type="text" maxlength="30" placeholder="např. Honza" autocomplete="off" enterkeyhint="go"
+               style="width:100%;padding:12px;border-radius:10px;border:1px solid #2a3a55;background:#0f1b2e;color:#f1f5f9;font-size:16px;margin-bottom:12px;">
+        <button type="button" class="btn" id="btn-login" 
+                style="width:100%;min-height:52px;font-size:1.1rem"
+                onclick="simpleLogin()">Vstoupit</button>
+      </div>
+      <script>
+        function simpleLogin() {
+          var name = (document.getElementById('player-name').value || '').trim();
+          if (!name) { alert('Zadej jméno.'); return; }
+          window.currentPlayer = name;
+          try {
+            if (typeof ensurePlayer === 'function') ensurePlayer(name);
+          } catch(e) {}
+          try {
+            if (typeof openMenu === 'function') {
+              openMenu();
+              return;
+            }
+          } catch(e) {}
+          // fallback – manuálně přepni obrazovky
+          var login = document.getElementById('login-screen');
+          var menu = document.getElementById('menu-screen');
+          if (login) login.classList.add('hidden');
+          if (menu) {
+            menu.classList.remove('hidden');
+            var chip = document.getElementById('menu-player-name');
+            if (chip) chip.textContent = '👤 ' + name;
+          }
+          alert('Přihlášen jako ' + name);
+        }
+      </script>
+      <p style="margin-top:14px;font-size:0.8rem;color:var(--muted);text-align:center">
+        Na iPhonu: napiš jméno a stiskni <strong>Vstoupit</strong> nebo klávesu Go.<br>
+        Pokud se nic nestane, zkus Chrome nebo přidej hru na plochu.
+      </p>
+      <div class="player-list" id="player-list"></div>
+    </div>
+
+    <!-- MAIN MENU -->
+    <div id="menu-screen" class="card menu-screen hidden">
+      <div class="player-bar">
+        <span class="player-chip" id="menu-player-name">—</span>
+        <button class="link-btn" id="btn-logout">Odhlásit</button>
+      </div>
+      <h2>Hlavní menu</h2>
+      <div class="menu-actions">
+        <button class="btn" id="btn-play">🚀 Hrát (náhodné otázky)</button>
+        <button class="btn success" id="btn-practice-wrong">🎯 Procvičit chyby + nové</button>
+        <button class="btn secondary" id="btn-show-stats">📊 Moje statistiky</button>
+        <button class="btn secondary" id="btn-leaderboard">🏆 Žebříček hráčů</button>
+        <button class="btn secondary" id="btn-export-stats">💾 Exportovat statistiky</button>
+        <label class="btn secondary" style="display:block;text-align:center;cursor:pointer;margin-top:8px">
+          📂 Importovat statistiky
+          <input type="file" id="import-stats-file" accept=".json" style="display:none">
+        </label>
+      </div>
+      <div class="mode-select" style="margin-top:18px">
+        <button class="mode-btn active" data-count="15">15 otázek</button>
+        <button class="mode-btn" data-count="30">30 otázek</button>
+        <button class="mode-btn" data-count="0">Neomezeně</button>
+      </div>
+      <p id="wrong-count-hint" style="margin-top:12px;font-size:0.85rem;color:var(--muted)"></p>
+    </div>
+
+    <!-- STATS -->
+    <div id="stats-screen" class="card stats-screen hidden">
+      <h2>📊 Statistiky</h2>
+      <p id="stats-player-label"></p>
+      <div class="stat-summary" id="stat-summary"></div>
+      <div class="tabs">
+        <button class="tab active" data-tab="wrong">Špatně</button>
+        <button class="tab" data-tab="correct">Správně</button>
+        <button class="tab" data-tab="all">Vše</button>
+        <button class="tab" data-tab="history">Historie her</button>
+      </div>
+      <div class="item-list" id="stats-list"></div>
+      <div class="controls">
+        <button class="btn secondary" id="btn-stats-back">← Zpět</button>
+        <button class="btn success" id="btn-practice-from-stats">Procvičit chyby + nové</button>
+      </div>
+    </div>
+
+
+    <!-- LEADERBOARD -->
+    <div id="leaderboard-screen" class="card stats-screen hidden">
+      <h2>🏆 Žebříček hráčů</h2>
+      <p>Porovnání hráčů na tomto zařízení</p>
+      <div class="item-list" id="leaderboard-list" style="max-height:360px"></div>
+      <div class="controls">
+        <button class="btn secondary" id="btn-lb-back">← Zpět</button>
+      </div>
+    </div>
+
+    <!-- GAME -->
+    <div id="game-screen" class="hidden">
+      <div class="player-bar">
+        <span class="player-chip" id="game-player-name">—</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="stats">
+        <div class="stat score"><div class="label">Skóre</div><div class="value" id="score">0</div></div>
+        <div class="stat streak"><div class="label">Série</div><div class="value" id="streak">0</div></div>
+        <div class="stat progress"><div class="label">Otázka</div><div class="value" id="progress">1/15</div></div>
+      </div>
+      <div class="card">
+        <div id="step-badge" class="step-badge">KROK 1 – Hlavní sekce</div>
+        <div class="item-display">
+          <div class="label">Položka</div>
+          <div class="name" id="item-name">—</div>
+          <div class="qty" id="item-qty"></div>
+        </div>
+        <div id="main-correct-info" class="main-correct-info hidden"></div>
+        <div class="sections-grid" id="sections-grid"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="streak-banner" id="streak-banner"></div>
+      </div>
+      <div class="controls">
+        <button class="btn secondary" id="btn-skip">Přeskočit</button>
+        <button class="btn" id="btn-next" disabled>Další →</button>
+        <button type="button" class="btn danger" id="btn-end-game" onclick="window.__endGame && window.__endGame()">Ukončit hru</button>
+      </div>
+    </div>
+
+    <!-- END -->
+    <div id="end-screen" class="card end-screen hidden">
+      <h2 id="end-title">Konec výjezdu!</h2>
+      <p id="end-summary"></p>
+      <div class="controls">
+        <button class="btn secondary" id="btn-end-menu">Menu</button>
+        <button class="btn" id="btn-restart">Hrát znovu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'cas20_players_v1';
+    let GAME_DATA = null;
+    let totalQuestions = 15;
+    let currentIndex = 0, score = 0, streak = 0, maxStreak = 0;
+    let queue = [], currentItem = null, stage = 1;
+    let mainAnswered = false, detailAnswered = false;
+    let practiceMode = false; // only wrong items
+    let sessionActive = false; // game in progress
+    let qToken = 0; // prevent double auto-advance
+    let currentPlayer = null;
+    let sessionWrong = []; // items wrong this session for practice tracking
+
+    // DOM
+    const loginScreen = document.getElementById('login-screen');
+    const menuScreen = document.getElementById('menu-screen');
+    const statsScreen = document.getElementById('stats-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const endScreen = document.getElementById('end-screen');
+    const itemNameEl = document.getElementById('item-name');
+    const itemQtyEl = document.getElementById('item-qty');
+    const sectionsGrid = document.getElementById('sections-grid');
+    const feedbackEl = document.getElementById('feedback');
+    const scoreEl = document.getElementById('score');
+    const streakEl = document.getElementById('streak');
+    const progressEl = document.getElementById('progress');
+    const progressBar = document.getElementById('progress-bar');
+    const btnNext = document.getElementById('btn-next');
+    const btnSkip = document.getElementById('btn-skip');
+    const endSummary = document.getElementById('end-summary');
+    const endTitle = document.getElementById('end-title');
+    const stepBadge = document.getElementById('step-badge');
+    const mainCorrectInfo = document.getElementById('main-correct-info');
+    const streakBanner = document.getElementById('streak-banner');
+    const wrongCountHint = document.getElementById('wrong-count-hint');
+
+    const STREAK_MSGS = [
+      { at: 2, text: '🔥 Jedeš!' }, { at: 3, text: '⚡ Série 3!' },
+      { at: 5, text: '💪 5 v řadě!' }, { at: 7, text: '🚒 Hasičský stroj!' },
+      { at: 10, text: '👑 LEGENDA VELITELE!' }, { at: 15, text: '🏆 NEZASTAVITELNÝ!' },
+    ];
+
+    // ----- Storage -----
+    function loadStore() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { players: {}, lastPlayer: null };
+        return JSON.parse(raw) || { players: {}, lastPlayer: null };
+      } catch (e) {
+        console.warn('loadStore failed', e);
+        return { players: {}, lastPlayer: null };
+      }
+    }
+    function saveStore(store) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+        return true;
+      } catch (e) {
+        console.error('saveStore failed', e);
+        alert('Ukládání statistik selhalo. Zkus hru otevřít v Chrome/Safari (ne v režimu soukromí) a nech ji v jedné složce.');
+        return false;
+      }
+    }
+    function flashSaved() {
+      const t = document.getElementById('save-toast');
+      if (!t) return;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1200);
+    }
+    function storageWorks() {
+      try {
+        const k = STORAGE_KEY + '_ping';
+        localStorage.setItem(k, '1');
+        localStorage.removeItem(k);
+        return true;
+      } catch (e) { return false; }
+    }
+    function getPlayer(name) {
+      const store = loadStore();
+      return store.players[name] || null;
+    }
+    function ensurePlayer(name) {
+      const store = loadStore();
+      if (!store.players[name]) {
+        store.players[name] = {
+          name,
+          created: Date.now(),
+          gamesPlayed: 0,
+          totalCorrect: 0,
+          totalWrong: 0,
+          maxStreak: 0,
+          itemStats: {},
+          history: []
+        };
+      }
+      store.lastPlayer = name;
+      saveStore(store);
+      return store.players[name];
+    }
+    function updatePlayer(name, mutator) {
+      const store = loadStore();
+      if (!store.players[name]) return;
+      mutator(store.players[name]);
+      saveStore(store);
+    }
+    function recordAnswer(itemName, isCorrect) {
+      if (!currentPlayer) return;
+      updatePlayer(currentPlayer, p => {
+        if (!p.itemStats[itemName]) p.itemStats[itemName] = { correct: 0, wrong: 0, lastResult: null };
+        const s = p.itemStats[itemName];
+        if (isCorrect) { s.correct++; p.totalCorrect++; }
+        else { s.wrong++; p.totalWrong++; }
+        s.lastResult = isCorrect ? 'correct' : 'wrong';
+        s.lastSeen = Date.now();
+      });
+    }
+    function finishGameRecord() {
+      if (!currentPlayer) {
+        console.warn('finishGameRecord: no player');
+        return;
+      }
+      updatePlayer(currentPlayer, p => {
+        p.gamesPlayed = (p.gamesPlayed || 0) + 1;
+        if (maxStreak > (p.maxStreak || 0)) p.maxStreak = maxStreak;
+        if (!p.history) p.history = [];
+        p.history.unshift({
+          date: Date.now(),
+          score: score,
+          total: queue.length,
+          maxStreak: maxStreak,
+          practice: !!practiceMode
+        });
+        if (p.history.length > 50) p.history = p.history.slice(0, 50);
+      });
+      flashSaved();
+      console.log('Game saved for', currentPlayer, 'score', score, '/', queue.length);
+    }
+    function getPracticeItems() {
+      // Wrong / weak items + never asked items
+      if (!currentPlayer || !GAME_DATA) return [];
+      const p = getPlayer(currentPlayer);
+      if (!p) return GAME_DATA.items.slice();
+      const seen = new Set(Object.keys(p.itemStats || {}));
+      const weak = new Set(
+        Object.entries(p.itemStats)
+          .filter(([, s]) => s.lastResult === 'wrong' || s.wrong > s.correct)
+          .map(([name]) => name)
+      );
+      // unique items from game data
+      const uniqueMap = new Map();
+      GAME_DATA.items.forEach(it => {
+        if (!uniqueMap.has(it.item)) uniqueMap.set(it.item, it);
+      });
+      const result = [];
+      uniqueMap.forEach((it, name) => {
+        if (weak.has(name) || !seen.has(name)) result.push(it);
+      });
+      return result;
+    }
+    function getWrongItems() {
+      // kept for stats labels
+      if (!currentPlayer) return [];
+      const p = getPlayer(currentPlayer);
+      if (!p) return [];
+      const set = new Set(
+        Object.entries(p.itemStats)
+          .filter(([, s]) => s.lastResult === 'wrong' || s.wrong > s.correct)
+          .map(([name]) => name)
+      );
+      return GAME_DATA.items.filter(it => set.has(it.item));
+    }
+    function countUnseen() {
+      if (!currentPlayer || !GAME_DATA) return 0;
+      const p = getPlayer(currentPlayer);
+      const seen = new Set(Object.keys(p.itemStats || {}));
+      const all = new Set(GAME_DATA.items.map(i => i.item));
+      let n = 0;
+      all.forEach(name => { if (!seen.has(name)) n++; });
+      return n;
+    }
+
+    // ----- UI navigation -----
+    function showScreen(id) {
+      ['login-screen','menu-screen','stats-screen','leaderboard-screen','game-screen','end-screen'].forEach(s => {
+        document.getElementById(s).classList.toggle('hidden', s !== id);
+      });
+    }
+
+    function renderPlayerList() {
+      const store = loadStore();
+      const list = document.getElementById('player-list');
+      const names = Object.keys(store.players);
+      if (!names.length) { list.innerHTML = ''; return; }
+      list.innerHTML = '<h3>Uložení hráči</h3>' + names.map(n => {
+        const p = store.players[n];
+        return `<div class="player-item" data-name="${n}">
+          <span class="name">${n}</span>
+          <span class="meta">${p.gamesPlayed} her · max série ${p.maxStreak}</span>
+        </div>`;
+      }).join('');
+      list.querySelectorAll('.player-item').forEach(el => {
+        el.addEventListener('click', () => {
+          currentPlayer = el.dataset.name;
+          const store2 = loadStore(); store2.lastPlayer = currentPlayer; saveStore(store2);
+          openMenu();
+        });
+      });
+    }
+
+    function openMenu() {
+      try { saveGameIfNeeded(); } catch (e) { console.warn(e); }
+      document.getElementById('menu-player-name').textContent = '👤 ' + (currentPlayer || '—');
+      document.getElementById('game-player-name').textContent = '👤 ' + currentPlayer;
+      const practice = getPracticeItems();
+      const wrong = getWrongItems();
+      const unseen = countUnseen();
+      if (practice.length) {
+        wrongCountHint.textContent = `K procvičení: ${wrong.length} chyb · ${unseen} nových otázek (celkem ${practice.length}).`;
+      } else {
+        wrongCountHint.textContent = 'Všechny otázky máš zvládnuté – výborně!';
+      }
+      document.getElementById('btn-practice-wrong').disabled = practice.length === 0;
+      showScreen('menu-screen');
+    }
+
+    // Login
+    function doLogin() {
+      const name = (document.getElementById('player-name').value || '').trim();
+      if (!name) {
+        alert('Zadej jméno.');
+        return;
+      }
+      try {
+        if (!storageWorks()) {
+          alert('Pozor: v tomto prohlížeči se statistiky neuloží (localStorage je vypnuté).\nHru můžeš hrát, ale výsledky se nezapamatují.\n\nTip: zkus Chrome, nebo přidej hru na plochu.');
+        } else {
+          ensurePlayer(name);
+        }
+      } catch (err) {
+        console.warn(err);
+        alert('Ukládání selhalo, ale můžeš pokračovat. Statistiky se neuloží.');
+      }
+      currentPlayer = name;
+      try {
+        openMenu();
+      } catch (err) {
+        console.error(err);
+        alert('Chyba při otevření menu: ' + err.message);
+      }
+    }
+
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        doLogin();
+      });
+    }
+    document.getElementById('btn-login').addEventListener('click', function(e) {
+      e.preventDefault();
+      doLogin();
+    });
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      currentPlayer = null;
+      renderPlayerList();
+      showScreen('login-screen');
+    });
+
+    // Mode buttons
+    document.querySelectorAll('[data-count]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-count]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        totalQuestions = parseInt(btn.dataset.count, 10);
+      });
+    });
+
+    document.getElementById('btn-play').addEventListener('click', () => {
+      practiceMode = false;
+      startGame();
+    });
+    document.getElementById('btn-practice-wrong').addEventListener('click', () => {
+      practiceMode = true;
+      startGame();
+    });
+    document.getElementById('btn-practice-from-stats').addEventListener('click', () => {
+      practiceMode = true;
+      startGame();
+    });
+    document.getElementById('btn-show-stats').addEventListener('click', () => openStats('wrong'));
+    document.getElementById('btn-stats-back').addEventListener('click', openMenu);
+    document.getElementById('btn-end-menu').addEventListener('click', openMenu);
+    document.getElementById('btn-restart').addEventListener('click', () => startGame());
+    btnNext.addEventListener('click', nextQuestion);
+    btnSkip.addEventListener('click', skipQuestion);
+    window.__endGame = function() {
+      if (!sessionActive) {
+        // still try to show end / menu
+        saveGameIfNeeded();
+        endGame();
+        return;
+      }
+      if (window.confirm('Opravdu ukončit hru? Statistiky se uloží.')) {
+        endGame();
+      }
+    };
+    const btnEndGame = document.getElementById('btn-end-game');
+    if (btnEndGame) {
+      btnEndGame.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.__endGame();
+      });
+    }
+
+    // Stats tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderStatsList(tab.dataset.tab);
+      });
+    });
+
+    function openStats(tabName) {
+      document.getElementById('stats-player-label').textContent = 'Hráč: ' + currentPlayer;
+      const p = getPlayer(currentPlayer);
+      const summary = document.getElementById('stat-summary');
+      const wrongN = Object.values(p.itemStats).filter(s => s.lastResult === 'wrong' || s.wrong > s.correct).length;
+      const correctN = Object.values(p.itemStats).filter(s => s.lastResult === 'correct' && s.correct >= s.wrong).length;
+      summary.innerHTML = `
+        <div class="stat-box"><div class="num">${p.gamesPlayed}</div><div class="lbl">Her</div></div>
+        <div class="stat-box"><div class="num" style="color:#86efac">${p.totalCorrect}</div><div class="lbl">Správně celkem</div></div>
+        <div class="stat-box"><div class="num" style="color:#fca5a5">${p.totalWrong}</div><div class="lbl">Špatně celkem</div></div>
+        <div class="stat-box"><div class="num" style="color:#fcd34d">${p.maxStreak}</div><div class="lbl">Max série</div></div>
+        <div class="stat-box"><div class="num">${wrongN}</div><div class="lbl">Položek k procvičení</div></div>
+        <div class="stat-box"><div class="num">${correctN}</div><div class="lbl">Zvládnutých položek</div></div>
+      `;
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+      renderStatsList(tabName);
+      showScreen('stats-screen');
+    }
+
+    function renderStatsList(tab) {
+      const p = getPlayer(currentPlayer);
+      const list = document.getElementById('stats-list');
+      if (tab === 'history') {
+        if (!p.history.length) { list.innerHTML = '<p style="color:var(--muted);text-align:center">Zatím žádné hry.</p>'; return; }
+        list.innerHTML = p.history.map(h => {
+          const d = new Date(h.date);
+          const pct = h.total ? Math.round(h.score/h.total*100) : 0;
+          return `<div class="item-row">
+            <span class="iname">${d.toLocaleString('cs-CZ')}${h.practice?' · procvičení':''}</span>
+            <span class="badge ${pct>=70?'ok':pct>=40?'mixed':'bad'}">${h.score}/${h.total} (${pct}%) · série ${h.maxStreak}</span>
+          </div>`;
+        }).join('');
+        return;
+      }
+      let entries = Object.entries(p.itemStats);
+      if (tab === 'wrong') entries = entries.filter(([,s]) => s.lastResult==='wrong' || s.wrong>s.correct);
+      if (tab === 'correct') entries = entries.filter(([,s]) => s.lastResult==='correct' && s.correct>=s.wrong);
+      entries.sort((a,b) => (b[1].wrong+b[1].correct) - (a[1].wrong+a[1].correct));
+      if (!entries.length) {
+        list.innerHTML = '<p style="color:var(--muted);text-align:center">Zatím nic.</p>';
+        return;
+      }
+      list.innerHTML = entries.map(([name,s]) => {
+        let badgeCls = 'mixed', badgeTxt = `${s.correct}✓ / ${s.wrong}✗`;
+        if (s.lastResult==='wrong' || s.wrong>s.correct) { badgeCls='bad'; }
+        else if (s.correct>=s.wrong) { badgeCls='ok'; }
+        return `<div class="item-row"><span class="iname">${name}</span><span class="badge ${badgeCls}">${badgeTxt}</span></div>`;
+      }).join('');
+    }
+
+
+    function openLeaderboard() {
+      const store = loadStore();
+      const list = document.getElementById('leaderboard-list');
+      const players = Object.values(store.players || {});
+      if (!players.length) {
+        list.innerHTML = '<p style="color:var(--muted);text-align:center">Zatím žádní hráči.</p>';
+        showScreen('leaderboard-screen');
+        return;
+      }
+      // Sort by: accuracy (correct/(correct+wrong)), then maxStreak, then gamesPlayed
+      players.sort((a, b) => {
+        const aTotal = a.totalCorrect + a.totalWrong;
+        const bTotal = b.totalCorrect + b.totalWrong;
+        const aAcc = aTotal ? a.totalCorrect / aTotal : 0;
+        const bAcc = bTotal ? b.totalCorrect / bTotal : 0;
+        if (bAcc !== aAcc) return bAcc - aAcc;
+        if (b.maxStreak !== a.maxStreak) return b.maxStreak - a.maxStreak;
+        return b.gamesPlayed - a.gamesPlayed;
+      });
+      list.innerHTML = players.map((p, i) => {
+        const total = p.totalCorrect + p.totalWrong;
+        const pct = total ? Math.round(p.totalCorrect / total * 100) : 0;
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+        const you = p.name === currentPlayer ? ' · ty' : '';
+        return `<div class="item-row">
+          <span class="iname"><strong>${medal} ${p.name}</strong>${you}</span>
+          <span class="badge ${pct>=70?'ok':pct>=40?'mixed':'bad'}">${pct}% · ${p.gamesPlayed} her · série ${p.maxStreak}</span>
+        </div>
+        <div class="item-row" style="border-bottom:1px solid rgba(255,255,255,0.08);padding-top:0;margin-top:-4px">
+          <span class="iname" style="color:var(--muted);font-size:0.78rem">✓ ${p.totalCorrect} &nbsp; ✗ ${p.totalWrong}</span>
+          <span></span>
+        </div>`;
+      }).join('');
+      showScreen('leaderboard-screen');
+    }
+    document.getElementById('btn-leaderboard').addEventListener('click', openLeaderboard);
+    document.getElementById('btn-lb-back').addEventListener('click', openMenu);
+
+
+    // ----- Export / Import statistik -----
+    function exportStats() {
+      const store = loadStore();
+      const data = JSON.stringify(store, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'statistiky_cas20_' + new Date().toISOString().slice(0,10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      flashSaved();
+      alert('Statistiky staženy jako soubor. Ulož si ho do Souborů na iPhonu – příště ho můžeš znovu importovat.');
+    }
+
+    function importStats(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !data.players) throw new Error('Neplatný soubor');
+          saveStore(data);
+          alert('Statistiky importovány! Obnovuju stránku...');
+          location.reload();
+        } catch (err) {
+          alert('Import se nepodařil: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    document.getElementById('btn-export-stats').addEventListener('click', exportStats);
+    document.getElementById('import-stats-file').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) importStats(e.target.files[0]);
+    });
+
+    // ----- Speech / effects -----
+    // Short signal sounds (Web Audio API) + fullscreen symbol
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function playTone(freq, duration, type, gainVal) {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type || 'sine';
+        osc.frequency.value = freq;
+        gain.gain.value = gainVal ?? 0.15;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const t = ctx.currentTime;
+        gain.gain.setValueAtTime(gainVal ?? 0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+        osc.start(t);
+        osc.stop(t + duration);
+      } catch (e) {}
+    }
+    function showFx(ok) {
+      const overlay = document.getElementById('fx-overlay');
+      const sym = document.getElementById('fx-symbol');
+      if (!overlay || !sym) return;
+      overlay.classList.remove('ok', 'bad', 'show');
+      sym.textContent = ok ? '✅' : '❌';
+      // reflow for animation restart
+      void overlay.offsetWidth;
+      overlay.classList.add(ok ? 'ok' : 'bad', 'show');
+      setTimeout(() => overlay.classList.remove('show'), 650);
+    }
+    function speakCorrect() {
+      // pleasant two-tone success beep
+      playTone(880, 0.09, 'sine', 0.12);
+      setTimeout(() => playTone(1175, 0.14, 'sine', 0.12), 90);
+      showFx(true);
+    }
+    function speakWrong() {
+      // short low buzz
+      playTone(220, 0.12, 'square', 0.08);
+      setTimeout(() => playTone(165, 0.18, 'square', 0.07), 100);
+      showFx(false);
+    }
+
+    const canvas=document.getElementById('confetti');
+    const ctx=canvas.getContext('2d');
+    let confettiPieces=[];
+    function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+    window.addEventListener('resize',resizeCanvas);resizeCanvas();
+    function spawnConfetti(){
+      const colors=['#22c55e','#3b82f6','#f59e0b','#ec4899','#a855f7','#14b8a6'];
+      for(let i=0;i<70;i++){
+        confettiPieces.push({x:Math.random()*canvas.width,y:-20-Math.random()*60,w:5+Math.random()*6,h:7+Math.random()*8,
+          color:colors[Math.floor(Math.random()*colors.length)],vx:-2+Math.random()*4,vy:2+Math.random()*4,
+          rot:Math.random()*Math.PI,vr:-0.2+Math.random()*0.4,life:70+Math.random()*40});
+      }
+    }
+    function tickConfetti(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      confettiPieces=confettiPieces.filter(p=>p.life>0);
+      confettiPieces.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.rot+=p.vr;p.life--;
+        ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+        ctx.globalAlpha=Math.min(1,p.life/25);ctx.fillStyle=p.color;
+        ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();
+      });
+      requestAnimationFrame(tickConfetti);
+    }
+    tickConfetti();
+    function shakeScreen(){
+      document.body.classList.remove('shake');void document.body.offsetWidth;
+      document.body.classList.add('shake');
+      setTimeout(()=>document.body.classList.remove('shake'),500);
+    }
+    function shuffle(arr){
+      const a=[...arr];
+      for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+      return a;
+    }
+
+    // ----- Game -----
+    function startGame(){
+      if(!GAME_DATA){alert('Data se nenačetla.');return;}
+      score=0;streak=0;maxStreak=0;currentIndex=0;
+      stage=1;mainAnswered=false;detailAnswered=false;sessionWrong=[];
+
+      let pool;
+      if(practiceMode){
+        pool=shuffle(getPracticeItems());
+        if(!pool.length){alert('Nemáš žádné chyby ani nové otázky k procvičení.');return;}
+        // unique by item name
+        const map=new Map(); pool.forEach(it=>{if(!map.has(it.item))map.set(it.item,it);});
+        pool=[...map.values()];
+      } else {
+        const uniqueMap=new Map();
+        GAME_DATA.items.forEach(it=>{if(!uniqueMap.has(it.item))uniqueMap.set(it.item,it);});
+        pool=shuffle([...uniqueMap.values()]);
+      }
+      queue=totalQuestions>0?pool.slice(0,Math.min(totalQuestions,pool.length)):pool;
+      sessionActive = true;
+      showScreen('game-screen');
+      updateStats(); showMainQuestion();
+    }
+
+    function updateStats(){
+      scoreEl.textContent=score;streakEl.textContent=streak;
+      const total=queue.length;
+      progressEl.textContent=`${Math.min(currentIndex+1,total)}/${total}`;
+      progressBar.style.width=(total>0?(currentIndex/total)*100:0)+'%';
+    }
+    function showStreakMsg(){
+      const msg=[...STREAK_MSGS].reverse().find(m=>streak>=m.at);
+      if(msg){streakBanner.textContent=msg.text;streakBanner.classList.add('show');}
+      else{streakBanner.textContent='';streakBanner.classList.remove('show');}
+    }
+    function clearGrid(){
+      if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+      sectionsGrid.innerHTML='';
+    }
+
+    function showMainQuestion(){
+      if(currentIndex>=queue.length){endGame();return;}
+      stage=1;mainAnswered=false;detailAnswered=false;
+      btnNext.disabled=true;btnSkip.disabled=false;
+      feedbackEl.textContent='';feedbackEl.className='feedback';
+      streakBanner.classList.remove('show');
+      mainCorrectInfo.classList.add('hidden');
+      stepBadge.textContent='KROK 1 – Hlavní sekce';stepBadge.className='step-badge';
+      currentItem=queue[currentIndex];
+      itemNameEl.textContent=currentItem.item;
+      itemQtyEl.textContent=currentItem.qty?`Množství: ${currentItem.qty}`:'';
+      clearGrid();
+      const allMain=GAME_DATA.main_sections.filter(s=>s!==currentItem.main);
+      const wrongs=shuffle(allMain).slice(0,3);
+      const mainOptions=shuffle([currentItem.main,...wrongs]);
+      mainOptions.forEach(sec=>{
+        const btn=document.createElement('button');
+        btn.type='button';btn.className='section-btn';btn.textContent=sec;
+        btn.addEventListener('click',()=>selectMain(sec,btn));
+        sectionsGrid.appendChild(btn);
+      });
+      updateStats();
+    }
+
+    function selectMain(selected,btn){
+      if(mainAnswered)return;
+      mainAnswered=true;btnSkip.disabled=true;btn.blur();
+      const buttons=sectionsGrid.querySelectorAll('.section-btn');
+      buttons.forEach(b=>{b.disabled=true;b.blur();});
+      if(selected===currentItem.main){
+        btn.classList.add('correct');
+        feedbackEl.innerHTML='✓ Správně! <span class="sub">Teď přesné umístění…</span>';
+        feedbackEl.className='feedback correct';
+        speakCorrect();
+        setTimeout(()=>showDetailQuestion(),850);
+      } else {
+        btn.classList.add('wrong');
+        feedbackEl.innerHTML=`✗ Špatně <span class="sub">Správně: ${currentItem.main}</span>`;
+        feedbackEl.className='feedback wrong';
+        speakWrong();shakeScreen();
+        buttons.forEach(b=>{if(b.textContent===currentItem.main)b.classList.add('correct');});
+        recordAnswer(currentItem.item,false);
+        streak=0;updateStats();btnNext.disabled=false;
+      }
+    }
+
+    function showDetailQuestion(){
+      stage=2;detailAnswered=false;
+      btnNext.disabled=true;btnSkip.disabled=false;
+      feedbackEl.textContent='';feedbackEl.className='feedback';
+      stepBadge.textContent='KROK 2 – Přesné umístění';stepBadge.className='step-badge detail';
+      mainCorrectInfo.textContent=`Hlavní sekce: ${currentItem.main}`;
+      mainCorrectInfo.classList.remove('hidden');
+      clearGrid();
+      const sameMain=GAME_DATA.items.filter(i=>i.main===currentItem.main&&i.detail);
+      const uniqueDetails=[...new Set(sameMain.map(i=>i.detail))];
+      let options=uniqueDetails.filter(d=>d!==currentItem.detail);
+      options=shuffle(options).slice(0,Math.min(3,options.length));
+      options=shuffle([currentItem.detail,...options]);
+      options.forEach(det=>{
+        const btn=document.createElement('button');
+        btn.type='button';btn.className='section-btn';
+        btn.textContent=det||'(bez detailu)';
+        btn.addEventListener('click',()=>selectDetail(det,btn));
+        sectionsGrid.appendChild(btn);
+      });
+    }
+
+    function selectDetail(selected,btn){
+      if(detailAnswered)return;
+      detailAnswered=true;btnSkip.disabled=true;btn.blur();
+      const buttons=sectionsGrid.querySelectorAll('.section-btn');
+      buttons.forEach(b=>{b.disabled=true;b.blur();});
+      if(selected===currentItem.detail){
+        btn.classList.add('correct');
+        feedbackEl.innerHTML='✓ Přesně tak!';
+        feedbackEl.className='feedback correct';
+        speakCorrect();spawnConfetti();
+        recordAnswer(currentItem.item,true);
+        score++;streak++;if(streak>maxStreak)maxStreak=streak;
+        showStreakMsg();
+      } else {
+        btn.classList.add('wrong');
+        feedbackEl.innerHTML=`✗ Špatně <span class="sub">Správně: ${currentItem.detail||'—'}</span>`;
+        feedbackEl.className='feedback wrong';
+        speakWrong();shakeScreen();
+        recordAnswer(currentItem.item,false);
+        buttons.forEach(b=>{if(b.textContent===(currentItem.detail||'(bez detailu)'))b.classList.add('correct');});
+        streak=0;
+      }
+      updateStats();
+      btnNext.disabled=false;
+      // automaticky další otázka po krátké pauze
+      const token = ++qToken;
+      setTimeout(() => {
+        if (token === qToken && detailAnswered && stage === 2) nextQuestion();
+      }, 900);
+    }
+
+    function skipQuestion(){
+      if(stage===1&&!mainAnswered){
+        mainAnswered=true;streak=0;
+        const buttons=sectionsGrid.querySelectorAll('.section-btn');
+        buttons.forEach(b=>{b.disabled=true;b.blur();if(b.textContent===currentItem.main)b.classList.add('correct');});
+        feedbackEl.innerHTML=`Správná sekce: ${currentItem.main}`;
+        feedbackEl.className='feedback wrong';
+        recordAnswer(currentItem.item,false);
+        updateStats();btnNext.disabled=false;btnSkip.disabled=true;
+      } else if(stage===2&&!detailAnswered){
+        detailAnswered=true;streak=0;
+        const buttons=sectionsGrid.querySelectorAll('.section-btn');
+        buttons.forEach(b=>{b.disabled=true;b.blur();if(b.textContent===(currentItem.detail||'(bez detailu)'))b.classList.add('correct');});
+        feedbackEl.innerHTML=`Správné umístění: ${currentItem.detail||'—'}`;
+        feedbackEl.className='feedback wrong';
+        recordAnswer(currentItem.item,false);
+        updateStats();btnNext.disabled=false;btnSkip.disabled=true;
+      }
+    }
+
+    function nextQuestion(){
+      qToken++; // cancel pending auto-advance
+      currentIndex++;
+      if(currentIndex>=queue.length)endGame();
+      else showMainQuestion();
+    }
+
+    
+    function saveGameIfNeeded() {
+      if (sessionActive && currentPlayer && queue.length) {
+        finishGameRecord();
+        sessionActive = false;
+      }
+    }
+
+    function endGame(){
+      // vždy zkus uložit průběh
+      if (sessionActive) {
+        saveGameIfNeeded();
+      } else if (currentPlayer && queue.length) {
+        // fallback pokud flag selhal
+        finishGameRecord();
+      }
+      sessionActive = false;
+      showScreen('end-screen');
+      // Na iPhonu nabídni export, pokud localStorage nefunguje spolehlivě
+      setTimeout(() => {
+        if (confirm('Chceš teď stáhnout zálohu statistik (doporučeno na iPhonu)?')) {
+          exportStats();
+        }
+      }, 800);
+      const total=queue.length;
+      const pct=total>0?Math.round((score/total)*100):0;
+      progressBar.style.width='100%';
+      if(pct>=90){endTitle.textContent='🏆 Mistr vozidla!';spawnConfetti();spawnConfetti();}
+      else if(pct>=70) endTitle.textContent='👍 Solidní výjezd!';
+      else if(pct>=50) endTitle.textContent='Jde to nahoru';
+      else endTitle.textContent='Trénink dělá mistra';
+      let msg=`Správně: <strong>${score}</strong> z ${total} (${pct}%)<br>Nejdelší série: <strong>${maxStreak}</strong>`;
+      if(practiceMode) msg+='<br><em>Režim procvičení chyb</em>';
+      endSummary.innerHTML=msg;
+    }
+
+    // Init
+    window.addEventListener('beforeunload', () => { saveGameIfNeeded(); });
+    if(window.EMBEDDED_DATA) GAME_DATA=window.EMBEDDED_DATA;
+    renderPlayerList();
+    const store=loadStore();
+    if(store.lastPlayer && store.players[store.lastPlayer]){
+      currentPlayer=store.lastPlayer;
+      openMenu();
+    } else {
+      showScreen('login-screen');
+    }
+  </script>
+  <script>
+    window.EMBEDDED_DATA = {"items": [{"item": "Vozidlová RDST PPR 131 (Motorola, Matra)", "qty": "2", "main": "Kabina - Volně", "detail": "nad hlavou velitele", "note": ""}, {"item": "Kapesní RDST PPR 530 (Motorola, Matra)", "qty": "2", "main": "Kabina - Volně", "detail": "na kastlíku v prostředí", "note": ""}, {"item": "Kapesní RDST PPR 630, 631, 632, 633, 634", "qty": "5", "main": "Kabina - Volně", "detail": "Na prostřední polici před hasiči", "note": ""}, {"item": "Ovladač na bránu/vrata", "qty": "1", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": "strojníkovi na dosah"}, {"item": "Ovládání k navijáku", "qty": "1", "main": "Kabina - Volně", "detail": "Ve dveřích u strojníka", "note": ""}, {"item": "Vesta reflexní - \"HASIČ", "qty": "5", "main": "Kabina - Volně", "detail": "zvenku pod sesačkama", "note": "u strojníka v boku ve dveřích"}, {"item": "Vesta reflexní - \"VELITEL ZÁSAHU", "qty": "1", "main": "Kabina - Volně", "detail": "Ve dveřích u VD", "note": ""}, {"item": "Páska \"VZ", "qty": "1", "main": "Kabina - Volně", "detail": "Ve dveřích u VD", "note": ""}, {"item": "Páska \"VÚ", "qty": "1", "main": "Kabina - Volně", "detail": "Ve dveřích u VD", "note": ""}, {"item": "Vesta reflexní - \"HASIČ VELITEL", "qty": "1", "main": "Kabina - Volně", "detail": "Ve dveřích u VD", "note": ""}, {"item": "Dalekohled", "qty": "1", "main": "Kabina - Volně", "detail": "Ve předu v polici nad strojníkem a VD", "note": ""}, {"item": "Tablet + nabíjecí kabel", "qty": "1", "main": "Kabina - Volně", "detail": "Vedle velitele", "note": ""}, {"item": "Mobilní telefon + nabíjecí kabel", "qty": "1", "main": "Kabina - Volně", "detail": "Vedle velitele", "note": ""}, {"item": "Složka VZ", "qty": "2", "main": "Kabina - Volně", "detail": "Uprostřed mezi strojníkem a VD", "note": ""}, {"item": "Zdroj pro ANALOG", "qty": "2", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Zdroj pro DIGITÁL", "qty": "1", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Ovladač brány - dálnice", "qty": "1", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Klíčový trezor", "qty": "1", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Kniha pro komunikaci s neslyšícím", "qty": "2", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Klíč k závoře - les", "qty": "3", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Univerzální klíč k rozvodné skříni", "qty": "1", "main": "Kabina - Volně", "detail": "Uprostřed v kastlíku", "note": ""}, {"item": "Rozbíječ skla s řezačem pásů", "qty": "2", "main": "Kabina - Volně", "detail": "Nad dveřmi u hasičů", "note": ""}, {"item": "Vyváďěcí kukla", "qty": "3", "main": "Kabina - Volně", "detail": "nad hlavami hasičů", "note": ""}, {"item": "Vyváďěcí maska", "qty": "3", "main": "Kabina - Volně", "detail": "nad hlavami hasičů", "note": ""}, {"item": "Parat maska", "qty": "2", "main": "Kabina - Volně", "detail": "nad hlavami hasičů", "note": ""}, {"item": "Přístroj dýchací", "qty": "6", "main": "Kabina - Volně", "detail": "4 za hasičema 2 vpředu", "note": ""}, {"item": "Láhev tlaková", "qty": "3", "main": "Kabina - Volně", "detail": "Za hasičema mezi sedačkama", "note": ""}, {"item": "Metoda START", "qty": "1", "main": "Kabina - Volně", "detail": "U hasičů v horní polici vlevo", "note": ""}, {"item": "Plyšová hračka", "qty": "2", "main": "Kabina - Volně", "detail": "U hasičů v horní polici vlevo", "note": ""}, {"item": "Sada náhlavní souprava", "qty": "1", "main": "Kabina - Volně", "detail": "U hasičů v horní polici vlevo", "note": ""}, {"item": "Hlavové klíny + popruhy", "qty": "1", "main": "Kabina - Volně", "detail": "U hasičů v horní polici vpravo", "note": ""}, {"item": "Polohovací pás", "qty": "4", "main": "Kabina - Volně", "detail": "U hasičů v horní polici vpravo", "note": ""}, {"item": "Páteřní deska", "qty": "1", "main": "Kabina - Volně", "detail": "Pod horní policí", "note": ""}, {"item": "Sada rukavic jednorázové \"L\" a \"XL", "qty": "2", "main": "Kabina - Volně", "detail": "Na prostřední polici v pravo", "note": ""}, {"item": "Termokamera", "qty": "1", "main": "Kabina - Volně", "detail": "Na prostřední polici vlevo", "note": ""}, {"item": "RHINOEVACK", "qty": "4", "main": "Kabina - Volně", "detail": "Na prostřední polici, každý hasič před sebou", "note": ""}, {"item": "Kufr detekce", "qty": "1", "main": "Kabina - Volně", "detail": "pod prostřední policí vlevo", "note": ""}, {"item": "Kufr nabíječky", "qty": "1", "main": "Kabina - Volně", "detail": "pod prostřední policí vlevo", "note": ""}, {"item": "Sada hřebíků", "qty": "1", "main": "Kabina - Volně", "detail": "pod prostřední policí vlevo dole", "note": ""}, {"item": "Sada vrutů", "qty": "1", "main": "Kabina - Volně", "detail": "pod prostřední policí vlevo dole", "note": ""}, {"item": "Kufr čistý hasič", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Kufr vesty", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Multidetektor", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Sewerin", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "SOR/R", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Radiometr DC-3E", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Dozimetr U-RAD", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Pyrometr", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Bezkontaktní teploměr", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Chemické světlo", "qty": "5", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Dýmovnice", "qty": "3", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Siréna akustická", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Ubrousky vlhčené", "qty": "2", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Dezinfekce", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Repelent", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední polici uprostřed", "note": ""}, {"item": "Tyč k řízení dopravy", "qty": "2", "main": "Kabina - Volně", "detail": "Uprostřed dole", "note": ""}, {"item": "Špunty do uší", "qty": "6", "main": "Kabina - Volně", "detail": "Uprostřed dole", "note": ""}, {"item": "Sada respirátorů FFP2", "qty": "1", "main": "Kabina - Volně", "detail": "Uprostřed dole", "note": ""}, {"item": "Batoh zdravotnický (SATURN OXY + AED)", "qty": "1", "main": "Kabina - Volně", "detail": "Pod prostřední policí vpravo dole", "note": ""}, {"item": "Minerálka", "qty": "4", "main": "Kabina - Volně", "detail": "Vedle sedaček u dveří", "note": ""}, {"item": "Holínky protichemické", "qty": "4", "main": "Kabina - Volně", "detail": "Pod sedačkama vlevo", "note": ""}, {"item": "Maska + filtr MOV 6 + P3R", "qty": "4", "main": "Kabina - Volně", "detail": "Pod sedačkama vlevo", "note": ""}, {"item": "Sada příslušenství k vozidlu", "qty": "1", "main": "Kabina - Volně", "detail": "Pod sedačkama vpravo", "note": ""}, {"item": "Příslušenství k CHP-71", "qty": "1", "main": "Kabina - Volně", "detail": "Pod sedačkama vlevo", "note": ""}, {"item": "Kabel prodlužovací 230V", "qty": "2", "main": "Nadstavba - levá - přední", "detail": "horní police vlevo", "note": ""}, {"item": "Světlomet AKU + akumulátor", "qty": "2", "main": "Nadstavba - levá - přední", "detail": "horní police vpravo", "note": ""}, {"item": "Příslušenství k HPS 3500 - pilař", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "prostřední police vlevo vzadu", "note": ""}, {"item": "Pila řetězová motorová", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "prostřední police uprostřed", "note": ""}, {"item": "Kanystr 10l - benzín", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "prostřední police vlevo", "note": ""}, {"item": "Náhradní kotouče", "qty": "4", "main": "Nadstavba - levá - přední", "detail": "prostřední police za kotoučovou pilou", "note": ""}, {"item": "Ventilátor přetlakový", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "vlevo dole", "note": ""}, {"item": "Elektrocentrála", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "vpravo dole", "note": ""}, {"item": "Světlomet AKU stojanový + akumulátor", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "horní police vpravo vzadu", "note": ""}, {"item": "Lopatka dřevorubecká", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "uprostřed za kanystrem", "note": ""}, {"item": "Přilba pro práci s MŘP", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "pod horní policí vlevo", "note": ""}, {"item": "Pila kotoučová motorová", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "prostřední police vpravo", "note": ""}, {"item": "Kanystr kombinovaný", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "prostřední police uprostřed", "note": ""}, {"item": "Čerpadlo kalové", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "prostřední police vpravo vzadu", "note": ""}, {"item": "Akumulátor (ventilátor)", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "vlevo dole pod ventilátorem", "note": ""}, {"item": "Protiřezové kalhoty", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová vlevo", "note": ""}, {"item": "Páska vytyčovací", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová vpravo", "note": ""}, {"item": "Pila ruční", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová uprostřed", "note": ""}, {"item": "Klín dřevorubecký", "qty": "3", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová uprostřed", "note": ""}, {"item": "Protiřezové návleky", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová vlevo", "note": ""}, {"item": "Pila ruční - teleskopická", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová vzadu uprostřed", "note": ""}, {"item": "Nářadí k pile", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová uprostřed", "note": ""}, {"item": "Spínač kmene", "qty": "1", "main": "Nadstavba - levá - přední", "detail": "Bedna kovová vpravo", "note": ""}, {"item": "Hadice B75", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "nahoře vlevo", "note": ""}, {"item": "Šlauchpaket (2x hadice C42)", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "nahoře uprostřed", "note": ""}, {"item": "Lezecký batoh", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "nahoře v pravo", "note": ""}, {"item": "Hadice C42", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "nahoře vlevo", "note": ""}, {"item": "D - program", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "nahoře vpravo", "note": ""}, {"item": "Lano 30m", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "nahoře vpravo", "note": ""}, {"item": "Lano pracovní", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "uprostřed v polici", "note": ""}, {"item": "Lano ventilové", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "uprostřed v polici", "note": ""}, {"item": "Koš na hadice B75", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "Dole vlevo", "note": ""}, {"item": "Proudnice C52 PROTEK", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "dole vlevo", "note": ""}, {"item": "Kulový uzávěr", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "dole vpravo", "note": ""}, {"item": "Rozdělovač hadicový B-CBC + přechod 75/52", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "dole vpravo", "note": ""}, {"item": "Přechod 52/25", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "vpravo na stěně", "note": ""}, {"item": "Objímka hadicová \"B", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "v prostřední polici vpravo", "note": ""}, {"item": "Lano záchytné", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "v prostřední polici vpravo", "note": ""}, {"item": "Držák hadicový", "qty": "4", "main": "Nadstavba - levá - prostřední", "detail": "v prostřední polici vpravo", "note": ""}, {"item": "Koš na hadice C52", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "dole vlevo", "note": ""}, {"item": "Deflektor", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "dole vzadu", "note": ""}, {"item": "Ventil přetlakový", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "dole vpravo", "note": ""}, {"item": "Přechod 75/52", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "dole v pravo na stěně", "note": ""}, {"item": "Klíč na hadice 75/52", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "dole vpravo na stěně", "note": ""}, {"item": "Objímka hadicová \"C", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "prostřední police vpravo", "note": ""}, {"item": "Hadice D25", "qty": "5", "main": "Nadstavba - levá - prostřední", "detail": "Batoh D - program", "note": ""}, {"item": "Přechod 52/25", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Batoh D - program", "note": ""}, {"item": "Proudnice D25", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "Batoh D - program", "note": ""}, {"item": "Rozdělovač hadicový C-DCD + přechod 52/25", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Batoh D - program", "note": ""}, {"item": "RIG", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Karabina lezecká", "qty": "12", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Postroj zachycovací/polohovací", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Postroj záchranný (evakuační trojúhelník)", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Smyčka textilní", "qty": "4", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Smyčka ocelová", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Chránička na lano", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Nůž pro lezce", "qty": "2", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Vak transportní materiál (5l)", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Lano 60m", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Lano 30m", "qty": "1", "main": "Nadstavba - levá - prostřední", "detail": "Lezecký batoh", "note": ""}, {"item": "Palice 5kg", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "vysuvné plato vlevo vzadu", "note": ""}, {"item": "Sekera štípací", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vlevo vepředu", "note": ""}, {"item": "Kleště pákové elektro", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vlevo vzadu", "note": ""}, {"item": "Nástroj vyprošťovací ruční HOOLIGAN", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vpravo vepředu", "note": ""}, {"item": "PHP - prášek", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vpravo vepředu", "note": ""}, {"item": "Klíč k podzemnímu hydrantu", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "vzadu na stěně", "note": ""}, {"item": "Sekera bourací", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "vzadu na stěně", "note": ""}, {"item": "PHP - CO₂", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "vpravo", "note": ""}, {"item": "Lopatka polní", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vlevo nahoře", "note": ""}, {"item": "Kladivo", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vlevo nahoře", "note": ""}, {"item": "Kleště pákové", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vlevo dole", "note": ""}, {"item": "Nástavec hydrantový", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "výsuvné plato vpravo", "note": ""}, {"item": "Páčidlo ploché", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "vzadu na stěně", "note": ""}, {"item": "Klíč ventilový - uzávěr vody", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "vzadu na stěně", "note": ""}, {"item": "Vak hasící", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "vpravo nahoře na stěně", "note": ""}, {"item": "Karabina ocelová", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Klíč kominický hvězdicový", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Rukavice protižárové", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Řetízek ocelový 30m + závaží 4kg", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Strojek komínový se závažím (velký, malý)", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Lano na vytažení závaží", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Zrcátko kominické", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.1 - Sada kominická", "note": ""}, {"item": "Odběrové sklenice 0,75l", "qty": "6", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Průvodka vzorků", "qty": "5", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Lžíce nerezová", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Naběračka nerezová", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Nálevka malá", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Sítko", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Štítek popisovací", "qty": "10", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.2 - Sada odběrová", "note": ""}, {"item": "Klínek-kužel 90x300 mm", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klínek-kužel 60x300 mm", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klínek-kužel 30x300 mm", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klínek-kužel 20x110 mm", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klínek-kužel 40x100 mm", "qty": "3", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klínek-kužel 30x100 mm", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klínek-kužel 35x75 mm", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klín 19 cm", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klín 14,5 cm", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Klín 4,5 cm", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Fix červený", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Fix černý", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Rukavice pro jednorázové použití", "qty": "5", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Papír filtrační", "qty": "5", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.3 - Sada klínů na únik NL", "note": ""}, {"item": "Brýle ochranné", "qty": "4", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Oděv protichemický jednorázový TYVEK", "qty": "4", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Oděv protichemický jednorázový TYCHEM", "qty": "4", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Páska stahovací", "qty": "10", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Páska šedá", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Respirátorů FFP3", "qty": "sada", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Rukavice protichemické", "qty": "4", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.4 - Sada ptačí chřipka", "note": ""}, {"item": "Příměšovač přenosný (TURBOMIX)", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.5 - Sada pěnotvorná", "note": ""}, {"item": "Smáčedlo (kartuše)", "qty": "6", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.5 - Sada pěnotvorná", "note": ""}, {"item": "Příměšovač přenosný na pěnidlo", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.5 - Sada pěnotvorná", "note": ""}, {"item": "Savička příměšovače", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.5 - Sada pěnotvorná", "note": ""}, {"item": "Oblek včelařský", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.6 - Sada na obtížný hmyz", "note": ""}, {"item": "Kukla včelařská", "qty": "2", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.6 - Sada na obtížný hmyz", "note": ""}, {"item": "Sprej na obtížný hmyz", "qty": "4", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.6 - Sada na obtížný hmyz", "note": ""}, {"item": "Jed sypký", "qty": "1", "main": "Nadstavba - levá - zadní", "detail": "Přepravka č.6 - Sada na obtížný hmyz", "note": ""}, {"item": "Klíč na hadice 75/52 - 110", "qty": "2", "main": "Nadstavba - zadní - u čerpadla", "detail": "dole vlevo na stěně", "note": ""}, {"item": "Klíč k nadzemnímu hydrantu", "qty": "1", "main": "Nadstavba - zadní - u čerpadla", "detail": "vlevo dole na stěně", "note": ""}, {"item": "Přechod 75/52", "qty": "1", "main": "Nadstavba - zadní - u čerpadla", "detail": "vlevo nahoře na stěně", "note": ""}, {"item": "Redukce autozásuvky", "qty": "1", "main": "Nadstavba - zadní - u čerpadla", "detail": "vlevo dole na stěně", "note": ""}, {"item": "Čerpadlo plovoucí motorové", "qty": "1", "main": "Nadstavba - zadní - u čerpadla", "detail": "nahoře", "note": ""}, {"item": "Hadice B75 - 5m", "qty": "2", "main": "Nadstavba - zadní - u čerpadla", "detail": "nahoře vpravo", "note": ""}, {"item": "Sběrač 2x75", "qty": "1", "main": "Nadstavba - zadní - u čerpadla", "detail": "nahoře vpravo vzadu", "note": ""}, {"item": "Proudnice pěnotvorná na střední pěnu", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "nahoře vpravo", "note": ""}, {"item": "Sada otevírání aut", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "vpravo vzadu", "note": ""}, {"item": "Klíč na hadice 75/52 - 110", "qty": "2", "main": "Nadstavba - pravá - zadní", "detail": "dole vlevo na stěně", "note": ""}, {"item": "Pult hygienický", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "dole vpravo", "note": ""}, {"item": "Proudnice pěnotvorná na těžkou pěnu", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "uprostřed vzadu na stěně", "note": ""}, {"item": "Nástavec pěnotvorný na vysokotlak", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "vlevo dole", "note": ""}, {"item": "Koš na hadice C52", "qty": "2", "main": "Nadstavba - pravá - zadní", "detail": "dole vlevo", "note": ""}, {"item": "Plachta 6x6m", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační I", "note": ""}, {"item": "Plachta 3x3m", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační I", "note": ""}, {"item": "Hadice zahradní 5m", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační I", "note": ""}, {"item": "Průtokový kartáč", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační I", "note": ""}, {"item": "Chloramix", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Jar", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "INDEHA", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Septoderm", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Chirosan", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Drtič tablet", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Trychtýř", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Rozprašovač", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Smeták", "qty": "1", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Pytle", "qty": "sada", "main": "Nadstavba - pravá - zadní", "detail": "Souprava dekontaminační II", "note": ""}, {"item": "Oblek protichemický", "qty": "4", "main": "Nadstavba - pravá - prostřední", "detail": "horní police", "note": ""}, {"item": "Sada dlahy vakuové", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vlevo", "note": ""}, {"item": "Deka", "qty": "2", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police uprostřed", "note": ""}, {"item": "Plachta transportní", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vlevo", "note": ""}, {"item": "Sada otevírání oken", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vpravo", "note": ""}, {"item": "Vak prostředky pro práci na vodě", "qty": "2", "main": "Nadstavba - pravá - prostřední", "detail": "dolní police vpravo", "note": ""}, {"item": "Kufr otvírání bytů 2", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "dolní police uprostřed", "note": ""}, {"item": "Kufr elektro nářadí", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "dolní police vlevo", "note": ""}, {"item": "Matrace vakuová", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vlevo", "note": ""}, {"item": "Fixace páteřní Spencer SED", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vpravo", "note": ""}, {"item": "Popáleninové prostěradlo", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vlevo", "note": ""}, {"item": "Házecí pytlík", "qty": "2", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vpravo", "note": ""}, {"item": "Přísavka na sklo", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "prostřední police vpravo", "note": ""}, {"item": "Kufr otvírání bytů 1", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "dolní police uprostřed", "note": ""}, {"item": "Kufr nářadí", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "dolní police vlevo", "note": ""}, {"item": "Kufr AKU nářadí", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "dolní police vlevo", "note": ""}, {"item": "Neopren suchý AGAMA", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "Vak prostředky pro práci na vodě", "note": ""}, {"item": "Termovložka", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "Vak prostředky pro práci na vodě", "note": ""}, {"item": "Neoprenové rukavice", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "Vak prostředky pro práci na vodě", "note": ""}, {"item": "Vesta záchranná", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "Vak prostředky pro práci na vodě", "note": ""}, {"item": "Botce", "qty": "1", "main": "Nadstavba - pravá - prostřední", "detail": "Vak prostředky pro práci na vodě", "note": ""}, {"item": "Vak zvedací vysokotlaký", "qty": "4", "main": "Nadstavba - pravá - přední", "detail": "vrchní police vpravo", "note": ""}, {"item": "Sada zachycovače airbagů", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "uprostřed vlevo", "note": ""}, {"item": "Světlo výstražné (sada puky)", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "uprostřed", "note": ""}, {"item": "Dopravní kužel", "qty": "6", "main": "Nadstavba - pravá - přední", "detail": "uprostřed vpravo", "note": ""}, {"item": "Stabilizační podpěra", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "prostřední výsuvné plato vzadu", "note": ""}, {"item": "Zástrčka elektromobilita", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "prostřední výsuvné plato uprostřed", "note": ""}, {"item": "Prahová opěrka", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "prostřední výsuvné plato vlevo", "note": ""}, {"item": "Nástroj na řezání skla GLAS MASTER", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "dole vlevo na stěně", "note": ""}, {"item": "Nástroj rozpínací AKU", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "dolní výsuvné plato vpravo", "note": ""}, {"item": "Štít ochranný", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "pod výsuvným prostředním platem", "note": ""}, {"item": "Holmatro dráp", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "dolní výsuvné plato vlevo v kastlíku", "note": ""}, {"item": "Nůž", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "prostřední výsuvné plato uprostřed", "note": ""}, {"item": "Válec rozpínací AKU", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "prostřední výsuvné plato vpravo", "note": ""}, {"item": "Akumulátor (vyprošťování)", "qty": "3", "main": "Nadstavba - pravá - přední", "detail": "prostřední výsuvné plato vlevo v kastlíku", "note": ""}, {"item": "Nástroj stříhací AKU", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "dolní výsuvné plato vzadu", "note": ""}, {"item": "Kalhoty brodivé", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.1 - Souprava brodivá", "note": ""}, {"item": "Sada pro krytí ostrých hran při vyprošťování", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.2 - Sada", "note": ""}, {"item": "Vak na zesnulé", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.2 - Sada", "note": ""}, {"item": "Hadice s bezpečnostní spojkou 5m, červená", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Hadice s bezpečnostní spojkou 5m, modrá", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Hadice s bezpečnostní spojkou 5m, žlutá", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Nástavec uzavírací s kulovým ventilem 0,5m, modrá", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Ventil redukční 200/300 bar + hadice 2m, žlutá", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Jednotka dvojitá řídící", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Hadice propojovací, modrá", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.3 - Příslušenství zvedací vaky", "note": ""}, {"item": "Střihač pedálů", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.4 - Prostředky dopravní nehody", "note": ""}, {"item": "Otevírač dveří", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.4 - Prostředky dopravní nehody", "note": ""}, {"item": "Ruční pohonná jednotka", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.4 - Prostředky dopravní nehody", "note": ""}, {"item": "Hydraulická hadice", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.4 - Prostředky dopravní nehody", "note": ""}, {"item": "Úvazek textilní 2m", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.5 - Příslušenství k navijáku", "note": ""}, {"item": "Úvazek textilní 3m", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.5 - Příslušenství k navijáku", "note": ""}, {"item": "Sada popruhů upínací", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.5 - Příslušenství k navijáku", "note": ""}, {"item": "Třmen", "qty": "3", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.5 - Příslušenství k navijáku", "note": ""}, {"item": "Lano ocelové pro vyprošťování", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.5 - Příslušenství k navijáku", "note": ""}, {"item": "Kladka", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.5 - Příslušenství k navijáku", "note": ""}, {"item": "Tmel havarijní", "qty": "1", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.6 - Souprava havarijní", "note": ""}, {"item": "Tmel rychletuhnoucí", "qty": "3", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.6 - Souprava havarijní", "note": ""}, {"item": "Sorpční rohož", "qty": "4", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.6 - Souprava havarijní", "note": ""}, {"item": "Sorpční had ø8 cm, 120 mm", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.6 - Souprava havarijní", "note": ""}, {"item": "Pytel polyetylénový", "qty": "5", "main": "Nadstavba - pravá - přední", "detail": "Přepravka č.6 - Souprava havarijní", "note": ""}, {"item": "Stabilizační klín s protiklínem", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Blok velký 20x8 cm", "qty": "4", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Propoj k blokům", "qty": "5", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Vyprošťovací řetězy k rozpínacímu nástroji", "qty": "2", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Stabilizační klín - malý", "qty": "4", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Blok malý 20x4 cm", "qty": "5", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Podložka pod zvedací vaky", "qty": "4", "main": "Nadstavba - pravá - přední", "detail": "Bedna kovová - prostředky dopravní nehody", "note": ""}, {"item": "Žebřík nastavovací hliníkový (4 ks)", "qty": "sada", "main": "Střecha vozidla", "detail": "Vpravo", "note": ""}, {"item": "Nástavec nastavovacího žebříku", "qty": "1", "main": "Střecha vozidla", "detail": "V bedně", "note": ""}, {"item": "Můstky přejezdové", "qty": "2", "main": "Střecha vozidla", "detail": "Za kabinou", "note": ""}, {"item": "Hák trhací dřevěný + nástavec", "qty": "1", "main": "Střecha vozidla", "detail": "na bedně podélné", "note": ""}, {"item": "Hák trhací hliníkový + nástavec", "qty": "1", "main": "Střecha vozidla", "detail": "na bedně podélné", "note": ""}, {"item": "Barel sorbent (absodan/rašelina)", "qty": "3", "main": "Střecha vozidla", "detail": "Vzadu a mezi bednami", "note": ""}, {"item": "Lavice skládací", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Clona nehodová", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Nosítka skládací", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Kbelík hliníkový", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Lopatka hliníková", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Kolík vytyčovací", "qty": "6", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Úkapová nádoba", "qty": "2", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Naběračka na násadě", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Teleskopická tyč", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Lopatka dřevorubecká - velká", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Rýč", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Vidle", "qty": "2", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Kopáč", "qty": "2", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Krumpáč", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Motykosekera", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Gorgui", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Lopata", "qty": "3", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Koště", "qty": "2", "main": "Střecha vozidla", "detail": "Bedna podélná", "note": ""}, {"item": "Souprava k lafetě", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Vana záchytná - skládací", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Kanálová ucpávka - magnetická", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Soda", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Odchytová tyč", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Odchytová síť", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Tyč prodlužovací ke zkoušečce napětí", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Odchytové rukavice", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Sorpční had ø12cm, 2m", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Přechod 110/75", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Přechod 110/125", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Přechod 110/DIN 125", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}, {"item": "Nástavec žebříku nastavovacího hliníkového", "qty": "1", "main": "Střecha vozidla", "detail": "Bedna příčná za kabinou", "note": ""}], "main_sections": ["Kabina - Volně", "Nadstavba - levá - přední", "Nadstavba - levá - prostřední", "Nadstavba - levá - zadní", "Nadstavba - zadní - u čerpadla", "Nadstavba - pravá - zadní", "Nadstavba - pravá - prostřední", "Nadstavba - pravá - přední", "Střecha vozidla"]};
+    GAME_DATA = window.EMBEDDED_DATA;
+  </script>
+</body>
+</html>
